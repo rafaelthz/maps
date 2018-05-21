@@ -4,7 +4,8 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "beefy app.js:bundle.js --live",
+    "bundle": "browserify app.js -o bundle.js"
   },
   "author": "",
   "license": "ISC",
@@ -14,9 +15,5 @@
   "devDependencies": {
     "beefy": "^2.1.8",
     "browserify": "^16.2.2"
-  },
-  "scripts": {
-    "start": "beefy app.js:bundle.js --live",
-    "bundle": "browserify app.js -o bundle.js"
   }
 }
