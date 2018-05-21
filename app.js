@@ -17,26 +17,68 @@ L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
     attribution: '&copy; Contribuidores do <a href="http://osm.org/copyright">OpenStreetMap</a>'
 }).addTo(map);
 
-var muxiCoordinates = [-22.903719, -43.1760605];
-var muxiMarkerMessage = "A Muxi fica aqui.<br>Olá mundo!";
-
-//L.marker(muxiCoordinates).addTo(map).bindPopup(muxiMarkerMessage).openPopup();
-
-// var myLayer=L.geoJSON().addTo(map);
-// myLayer.addData(bic)
+// function onEachFeature(feature, layer) {
+//     // does this feature have a property named popupContent?
+//     //"drvr_sex" "crashday" "crash_type"
+//     var feat = feature.properties
+//     if (feat){
+//         layer.bindPopup('Driver Sex: ' + feat.drvr_sex + '<br>Crash Day: '+ feat.crashday+ '<br>Crash Type: ' + feat.crash_type);
+//     }
+// }
 
 function onEachFeature(feature, layer) {
     // does this feature have a property named popupContent?
-    //drvr_sex" "crashday" "crash_grp"
-    if (feature.properties && feature.properties.crash_type){
-    	var feat = feature.properties
-        layer.bindPopup('Driver Sex: ' + feat.drvr_sex + '<br>Crash Day: '+ feat.crashday+ '<br>Crash Type: ' + feat.crash_type);
+    //"roadspeedlimit" "length" "type"
+    var feat = feature.properties
+    if (feat){
+        layer.bindPopup('Road Speed Limit: ' + feat.roadspeedlimit + '<br>Length: '+ feat.length+ '<br>Type: ' + feat.type);
     }
+
+    layer.on({
+		mouseover: highlightFeature,
+		mouseout: resetHighlight
+	});
 }
 
-L.geoJSON(bic, {
-    onEachFeature: onEachFeature
+var geojson = L.geoJSON(data, {
+    onEachFeature: onEachFeature,
+	style: style
 }).addTo(map);
+
+function style(feature) {
+	return {
+		"weight": 4,
+		"color": getColor(feature.properties.length),
+	 	"opacity": 1
+	}
+};
+
+function getColor(x) {
+  	return	x < 0.25	?  '#ffffb2':
+         	x < 0.40	?  '#fecc5c':
+         	x < 0.55	?  '#fd8d3c':
+         	x < 0.70	?  '#f03b20':
+            	           '#bd0026';
+};
+
+function highlightFeature(e) {
+	var layer = e.target;
+
+	layer.setStyle({
+		weight: 6,
+		color: '#277FCA',
+		fillOpacity: 0.7
+	});
+
+	if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+		layer.bringToFront();
+	}
+}
+
+function resetHighlight(e) {
+	geojson.resetStyle(e.target);
+	//info.update();
+}
 
 // // Set the position and zoom level of the map
 // map.setView([47.70, 13.35], 7);
