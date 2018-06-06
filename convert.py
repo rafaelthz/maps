@@ -1,26 +1,9 @@
 import csv
-import math
-
-# Distances are measured in miles.
-# Longitudes and latitudes are measured in degrees.
-# Earth is assumed to be perfectly spherical.
-
-earth_radius = 3960.0
-degrees_to_radians = math.pi/180.0
-radians_to_degrees = 180.0/math.pi
-
-def change_in_latitude(miles):
-    "Given a distance north, return the change in latitude."
-    return (miles/earth_radius)*radians_to_degrees
-
-def change_in_longitude(latitude, miles):
-    "Given a latitude and a distance west, return the change in longitude."
-    # Find the radius of a circle around the earth at given latitude.
-    r = earth_radius*math.cos(latitude*degrees_to_radians)
-    return (miles/r)*radians_to_degrees
+from pyproj import Proj, transform
+import sys
 
 # Read in raw data from csv
-rawData = csv.reader(open('./data/buses_by_time.csv', 'r'), dialect='excel')
+rawData = csv.reader(open('./data/geolife2.csv', 'r'), dialect='excel')
 
 
 # the template. where data from the csv will be formatted to geojson
@@ -38,28 +21,78 @@ template = \
 # the head of the geojson file
 output = \
    ''' \
+var data2 = { "type" : "FeatureCollection",
+   "features" : [
+   '''
 
-{ "type" : "FeatureCollection",
+output2 = \
+   ''' \
+var dataLines = { "type" : "FeatureCollection",
    "features" : [
    '''
 
 
+templateLines= \
+   ''' \
+   { "type" : "Feature",
+       "geometry" : {
+           "type" : "LineString",
+           "coordinates" : ['''
+
+output2 += templateLines
+
+coordinates='''[%s, %s]'''
+
+final=''']},
+       "properties" : {"id": "%s"}
+       },'''
+
 # loop through the csv by row skipping the first
-iter = 0
+i = 0
+anterior=0
 for row in rawData:
-   # iter += 1
-   # if iter >= 2:
-   id = row[0]
-   lat = change_in_latitude(float(row[2]))
-   lon = change_in_longitude(lat, float(row[1]))
-   instant = row[3]
-   if (instant=="5"):
-     break;
-   # output += template % (row[0], row[2], row[1], row[3], row[4])
-   output += template % (str(lon), str(lat), id, instant)
+  if(row[0]==id):
+    output2+=","
+  id = row[0]
+  lon = float(row[1])
+  lat = float(row[2])
+  instant = row[3]
+
+
+  inProj = Proj(init='epsg:3857')
+  outProj = Proj(init='epsg:4326')
+  x,y = transform(inProj, outProj, lon, lat)
+
+  # if (instant=="10"):
+  #   break
+  
+  output += template % (str(x), str(y), id, instant)
+
+  if(i==0 or (anterior==id)):
+    output2 += coordinates % (str(x), str(y))
+    #output2 += ","
+  else:
+    output2 += final % id
+    output2 += templateLines
+    output2 += coordinates % (str(x), str(y))
+    #output2 += ","
+
+  anterior=id
+
+  i+=1
+
+
 
 # the tail of the geojson file
 output += \
+   ''' \
+   ]
+
+}
+   '''
+
+output2 += final % id
+output2 += \
    ''' \
    ]
 
@@ -70,4 +103,8 @@ output += \
 # opens an geoJSON file to write the output
 outFileHandle = open("./data/teste.geojson", "w")
 outFileHandle.write(output)
+outFileHandle.close()
+
+outFileHandle = open("./data/testeLines.geojson", "w")
+outFileHandle.write(output2)
 outFileHandle.close()

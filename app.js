@@ -6,8 +6,8 @@ var map = L.map('map', {
   scrollWheelZoom: true
 });
 
-var initialCoordinates = [35.91, -79.06]; //Durham
-var initialZoomLevel = 10;
+var initialCoordinates = [0,0];
+var initialZoomLevel = 2;
 
 // create a map in the "map" div, set the view to a given place and zoom
 map.setView(initialCoordinates, initialZoomLevel);
@@ -17,14 +17,50 @@ L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
     attribution: '&copy; Contribuidores do <a href="http://osm.org/copyright">OpenStreetMap</a>'
 }).addTo(map);
 
-// function onEachFeature(feature, layer) {
-//     // does this feature have a property named popupContent?
-//     //"drvr_sex" "crashday" "crash_type"
-//     var feat = feature.properties
-//     if (feat){
-//         layer.bindPopup('Driver Sex: ' + feat.drvr_sex + '<br>Crash Day: '+ feat.crashday+ '<br>Crash Type: ' + feat.crash_type);
-//     }
-// }
+
+
+var runIcon = L.icon({
+    iconUrl: '/style/icons/jogging.png',
+    iconSize: [38, 95],
+    iconAnchor: [22, 94],
+    popupAnchor: [-3, -76],
+});
+
+var points = L.geoJSON(bic, {
+	pointToLayer: iconMarker,
+    onEachFeature: onEachFeaturePoint
+}).addTo(map);
+
+var geojson = L.geoJSON(data, {
+    onEachFeature: onEachFeature,
+	style: style
+}).addTo(map);
+
+var lines = L.geoJSON(dataLines, {
+	onEachFeature: onEachFeatureLines,
+    style: style2
+}).addTo(map);
+
+
+//var geojson2 = L.geoJSON(data2).addTo(map);
+
+function onEachFeaturePoint(feature, layer) {
+    // does this feature have a property named popupContent?
+    //"drvr_sex" "crashday" "crash_type"
+    var feat = feature.properties
+    if (feat){
+        layer.bindPopup('Driver Sex: ' + feat.drvr_sex + '<br>Crash Day: '+ feat.crashday+ '<br>Crash Type: ' + feat.crash_type);
+    }
+}
+
+function onEachFeaturePoint2(feature, layer) {
+    // does this feature have a property named popupContent?
+    //"drvr_sex" "crashday" "crash_type"
+    var feat = feature.properties
+    if (feat){
+        layer.bindPopup('ID: ' + feat.id + '<br>Instant: '+ feat.instant);
+    }
+}
 
 function onEachFeature(feature, layer) {
     // does this feature have a property named popupContent?
@@ -40,10 +76,17 @@ function onEachFeature(feature, layer) {
 	});
 }
 
-var geojson = L.geoJSON(data, {
-    onEachFeature: onEachFeature,
-	style: style
-}).addTo(map);
+function onEachFeatureLines(feature, layer) {
+	var feat = feature.properties
+    if (feat){
+        layer.bindPopup('ID: ' + feat.id);
+    }
+
+	layer.on({
+		mouseover: highlightFeature,
+		mouseout: resetHighlight2
+	});
+}
 
 function style(feature) {
 	return {
@@ -53,11 +96,26 @@ function style(feature) {
 	}
 };
 
+function style2(feature) {
+	return {
+		"weight": 8,
+		"color": '#000000',
+	 	"opacity": 1
+	}
+};
+
+function iconMarker(feature, latlng){
+    var bikeIcon = new L.icon({
+	    iconUrl: '/style/icons/cycling.png'
+	});
+    return L.marker(latlng, {icon: bikeIcon});
+}
+
 function getColor(x) {
-  	return	x < 0.25	?  '#ffffb2':
-         	x < 0.40	?  '#fecc5c':
-         	x < 0.55	?  '#fd8d3c':
-         	x < 0.70	?  '#f03b20':
+  	return	x < 0.40	?  '#ffffb2':
+         	x < 0.70	?  '#fecc5c':
+         	x < 1.00	?  	'#fd8d3c':
+         	x < 2.00	?  '#f03b20':
             	           '#bd0026';
 };
 
@@ -77,6 +135,11 @@ function highlightFeature(e) {
 
 function resetHighlight(e) {
 	geojson.resetStyle(e.target);
+	//info.update();
+}
+
+function resetHighlight2(e) {
+	lines.resetStyle(e.target);
 	//info.update();
 }
 
