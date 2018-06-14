@@ -3,7 +3,7 @@ from pyproj import Proj, transform
 import sys
 
 # Read in raw data from csv
-rawData = csv.reader(open('./data/geolife2.csv', 'r'), dialect='excel')
+rawData = csv.reader(open('./data/points_car_2s.csv', 'r'), dialect='excel')
 
 
 # the template. where data from the csv will be formatted to geojson
@@ -47,7 +47,7 @@ final=''']},
        "properties" : {"id": "%s"}
        },'''
 
-# loop through the csv by row skipping the first
+# loop through the csv by row
 i = 0
 anterior=0
 for row in rawData:
@@ -101,10 +101,10 @@ output2 += \
 
 
 # opens an geoJSON file to write the output
-outFileHandle = open("./data/teste.geojson", "w")
+outFileHandle = open("./data/car.geojson", "w")
 outFileHandle.write(output)
 outFileHandle.close()
 
-outFileHandle = open("./data/testeLines.geojson", "w")
+outFileHandle = open("./data/carLines.geojson", "w")
 outFileHandle.write(output2)
 outFileHandle.close()

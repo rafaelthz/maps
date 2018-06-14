@@ -1,9 +1,19 @@
-// Initialize leaflet.js
-var L = require('leaflet');
+// add an OpenStreetMap tile layer
+var base = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; Contribuidores do <a href="http://osm.org/copyright">OpenStreetMap</a>'
+});
 
+var cartodbAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="http://cartodb.com/attributions">CartoDB</a>';
+var positron = L.tileLayer('http://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png', {
+attribution: cartodbAttribution
+});
+
+//-----------------------------------------------------------------------//
 // Initialize the map
 var map = L.map('map', {
-  scrollWheelZoom: true
+  scrollWheelZoom: true,
+  layers: [base],
+  minZoom: 2
 });
 
 var initialCoordinates = [0,0];
@@ -12,38 +22,67 @@ var initialZoomLevel = 2;
 // create a map in the "map" div, set the view to a given place and zoom
 map.setView(initialCoordinates, initialZoomLevel);
 
-// add an OpenStreetMap tile layer
-L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; Contribuidores do <a href="http://osm.org/copyright">OpenStreetMap</a>'
-}).addTo(map);
-
-
-
-var runIcon = L.icon({
-    iconUrl: '/style/icons/jogging.png',
-    iconSize: [38, 95],
-    iconAnchor: [22, 94],
-    popupAnchor: [-3, -76],
+//-----------------------------------------------------------------------//
+//load datasets
+var bikeCrash = L.geoJSON(bic, {
+	//pointToLayer: iconMarker,
+    onEachFeature: onEachFeaturePoint
 });
 
-var points = L.geoJSON(bic, {
-	pointToLayer: iconMarker,
-    onEachFeature: onEachFeaturePoint
-}).addTo(map);
-
-var geojson = L.geoJSON(data, {
+var bikeRoutes = L.geoJSON(data, {
     onEachFeature: onEachFeature,
 	style: style
-}).addTo(map);
+});
 
-var lines = L.geoJSON(dataLines, {
+var geolife = L.geoJSON(dataLines, {
 	onEachFeature: onEachFeatureLines,
     style: style2
-}).addTo(map);
+});
+
+var geolifePoints = L.geoJSON(data2, {
+	onEachFeature: onEachFeaturePoint2
+});
+
+var carLines = L.geoJSON(car2, {
+	onEachFeature: onEachFeatureLines,
+    style: style2
+});
+
+// var carPoints = L.geoJSON(car, {
+// 	onEachFeature: onEachFeaturePoint2
+// });
 
 
-//var geojson2 = L.geoJSON(data2).addTo(map);
+//-----------------------------------------------------------------------//
+//add markers clusters
+var markers = L.markerClusterGroup({
+	chunkedLoading: true,
+	animateAddingMarkers: true
+});
 
+markers.addLayer(bikeCrash);
+markers.addLayer(geolifePoints);
+//markers.addLayer(carPoints);
+
+//add map controls
+var baseMaps = {
+    "Layer 1": base,
+    "Layer 2": positron
+};
+
+var overlayMaps = {
+    "Points": markers,
+    "Bike Crash": bikeCrash,
+    "Bike Routes": bikeRoutes,
+    "GeoLife Routes": geolife,
+    "Car Lines": carLines
+};
+
+L.control.layers(baseMaps, overlayMaps).addTo(map);
+
+
+//-------------------------------------------------------------------------//
+//functions
 function onEachFeaturePoint(feature, layer) {
     // does this feature have a property named popupContent?
     //"drvr_sex" "crashday" "crash_type"
@@ -55,7 +94,6 @@ function onEachFeaturePoint(feature, layer) {
 
 function onEachFeaturePoint2(feature, layer) {
     // does this feature have a property named popupContent?
-    //"drvr_sex" "crashday" "crash_type"
     var feat = feature.properties
     if (feat){
         layer.bindPopup('ID: ' + feat.id + '<br>Instant: '+ feat.instant);
@@ -88,6 +126,18 @@ function onEachFeatureLines(feature, layer) {
 	});
 }
 
+function onEachFeatureLines2(feature, layer) {
+	var feat = feature.properties
+    if (feat){
+        layer.bindPopup('ID: ' + feat.id);
+    }
+
+	layer.on({
+		mouseover: highlightFeature,
+		mouseout: resetHighlight3
+	});
+}
+
 function style(feature) {
 	return {
 		"weight": 4,
@@ -104,12 +154,12 @@ function style2(feature) {
 	}
 };
 
-function iconMarker(feature, latlng){
-    var bikeIcon = new L.icon({
-	    iconUrl: '/style/icons/cycling.png'
-	});
-    return L.marker(latlng, {icon: bikeIcon});
-}
+// function iconMarker(feature, latlng){
+//     var bikeIcon = new L.icon({
+// 	    iconUrl: '/style/icons/cycling.png'
+// 	});
+//     return L.marker(latlng, {icon: bikeIcon});
+// }
 
 function getColor(x) {
   	return	x < 0.40	?  '#ffffb2':
@@ -134,12 +184,17 @@ function highlightFeature(e) {
 }
 
 function resetHighlight(e) {
-	geojson.resetStyle(e.target);
+	bikeRoutes.resetStyle(e.target);
 	//info.update();
 }
 
 function resetHighlight2(e) {
-	lines.resetStyle(e.target);
+	geolife.resetStyle(e.target);
+	//info.update();
+}
+
+function resetHighlight3(e) {
+	carLines.resetStyle(e.target);
 	//info.update();
 }
 
